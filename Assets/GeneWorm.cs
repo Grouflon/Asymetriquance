@@ -3,19 +3,21 @@ using System.Collections;
 
 public enum CubeType
 {
-    Hard,
+    Hard = 1,
     Soft,
     Grow,
-    Shrink
+    Shrink,
+    COUNT
 }
 
 /* IDEAS:
     - could use cube count as Rigidbody mass
 */
-
-public class Bonjour : MonoBehaviour
+[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(MeshFilter))]
+[RequireComponent(typeof(MeshRenderer))]
+public class GeneWorm : MonoBehaviour
 {
-
     public CubeType[] cubes;
     public float cubeSize = 1.0f;
     public float expansionRatio = 0.5f;
@@ -94,9 +96,6 @@ public class Bonjour : MonoBehaviour
 
             m_colliderMeshes[i].vertices = vertices;
             int[] colliderIndices = new int[36];
-
-            int firstRowIndex = i * 4;
-            int secondRowIndex = (i + 1) * 4;
 
             // TOP
             colliderIndices[0] = 0; colliderIndices[1] = 4; colliderIndices[2] = 7;
