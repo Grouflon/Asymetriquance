@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public struct Chromosome
+public class Chromosome
 {
     public Chromosome(int _size)
     {
@@ -16,6 +16,11 @@ public struct Chromosome
     public ulong GetValue()
     {
         return m_value;
+    }
+
+    public int GetSize()
+    {
+        return m_size;
     }
 
     public float GetNormalizedValue()
