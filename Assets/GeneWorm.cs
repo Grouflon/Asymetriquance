@@ -5,8 +5,8 @@ public enum CubeType
 {
     Hard = 1,
     Soft,
-    Grow,
-    Shrink,
+    Pulse,
+    AntiPulse,
     COUNT
 }
 
@@ -23,6 +23,7 @@ public class GeneWorm : MonoBehaviour
     public float expansionRatio = 0.5f;
     public float expansionPeriod = 0.5f;
 
+    WormCube[] wormCubes;
     Vector3[] m_vertices;
     float m_timer;
     Mesh m_mesh;
@@ -34,6 +35,23 @@ public class GeneWorm : MonoBehaviour
     void Start()
     {
         GetComponent<Rigidbody>().mass = cubes.Length;
+
+        wormCubes = new WormCube[cubes.Length];
+        for (int i = 0; i < cubes.Length; ++i)
+        {
+            switch (cubes[i])
+            {
+                case CubeType.Hard: wormCubes[i] = new HardWormCube(); break;
+                case CubeType.Soft: wormCubes[i] = new SoftWormCube(); break;
+                case CubeType.Pulse: wormCubes[i] = new PulseWormCube(); break;
+                case CubeType.AntiPulse:
+                    {
+                        wormCubes[i] = new PulseWormCube();
+                        wormCubes[i].SetInvertedPhase(true);
+                    }
+                    break;
+            }
+        }
 
         m_vertices = new Vector3[4 * (cubes.Length + 1)];
         m_timer = 0.0f;
@@ -50,10 +68,10 @@ public class GeneWorm : MonoBehaviour
         // VERTICES
         for (int i = 0; i < cubes.Length + 1; ++i)
         {
-            m_vertices[i * 4 + 0] = new Vector3((float)i - cubeSize * 0.5f, cubeSize * 0.5f, cubeSize * 0.5f);
-            m_vertices[i * 4 + 1] = new Vector3((float)i - cubeSize * 0.5f, -cubeSize * 0.5f, cubeSize * 0.5f);
-            m_vertices[i * 4 + 2] = new Vector3((float)i - cubeSize * 0.5f, -cubeSize * 0.5f, -cubeSize * 0.5f);
-            m_vertices[i * 4 + 3] = new Vector3((float)i - cubeSize * 0.5f, cubeSize * 0.5f, -cubeSize * 0.5f);
+            m_vertices[i * 4 + 0] = new Vector3(i * cubeSize, cubeSize * 0.5f, cubeSize * 0.5f);
+            m_vertices[i * 4 + 1] = new Vector3(i * cubeSize, -cubeSize * 0.5f, cubeSize * 0.5f);
+            m_vertices[i * 4 + 2] = new Vector3(i * cubeSize, -cubeSize * 0.5f, -cubeSize * 0.5f);
+            m_vertices[i * 4 + 3] = new Vector3(i * cubeSize, cubeSize * 0.5f, -cubeSize * 0.5f);
         }
         m_mesh.vertices = m_vertices;
 
@@ -128,6 +146,64 @@ public class GeneWorm : MonoBehaviour
     // Update is called once per frame
     void FixedUpdate()
     {
+        for (int i = 0; i < wormCubes.Length; ++i)
+        {
+            // We assume that a face of the cube is always a plane.
+            Plane basePlane = new Plane(
+                m_vertices[(i * 4) + 0],
+                m_vertices[(i * 4) + 1],
+                m_vertices[(i * 4) + 2]
+            );
+            Vector3 origin = (m_vertices[(i * 4) + 0] + m_vertices[(i * 4) + 1] + m_vertices[(i * 4) + 2] + m_vertices[(i * 4) + 3]) / 4.0f;
+            Quaternion rotation = Quaternion.FromToRotation(new Vector3(1.0f, 0.0f, 0.0f), basePlane.normal);
+            Vector3[] outVertices;
+            wormCubes[i].CalculateVertices(cubeSize, expansionPeriod, cubeSize * expansionRatio, m_timer, out outVertices);
+            for (int j = 0; j < 8; ++j)
+            {
+                outVertices[j] = (rotation * outVertices[j]) + origin;
+            }
+
+            Debug.DrawLine(origin, origin + basePlane.normal, Color.blue);
+
+            WormCube.DeformationType currentDeformation = wormCubes[i].GetDeformationType();
+            WormCube.DeformationType previousDeformation = WormCube.DeformationType.Slave;
+            if (i > 0) previousDeformation = wormCubes[i - 1].GetDeformationType();
+
+            if (
+                (i == 0) ||
+                (currentDeformation == WormCube.DeformationType.Master && previousDeformation != WormCube.DeformationType.Master) ||
+                (previousDeformation == WormCube.DeformationType.Slave && currentDeformation != WormCube.DeformationType.Slave)
+            )
+            {
+                for (int j = 0; j < 8; ++j)
+                {
+                    m_vertices[(i * 4) + j] = outVertices[j];
+                }
+            }
+            else if (
+                (previousDeformation == WormCube.DeformationType.Master && currentDeformation != WormCube.DeformationType.Master) ||
+                (currentDeformation == WormCube.DeformationType.Slave && previousDeformation != WormCube.DeformationType.Slave)
+            )
+            {
+                for (int j = 4; j < 8; ++j)
+                {
+                    m_vertices[(i * 4) + j] = outVertices[j];
+                }
+            }
+            else
+            {
+                for (int j = 0; j < 4; ++j)
+                {
+                    m_vertices[(i * 4) + j] = (m_vertices[(i * 4) + j] + outVertices[j]) / 2.0f;
+                }
+                for (int j = 4; j < 8; ++j)
+                {
+                    m_vertices[(i * 4) + j] = outVertices[j];
+                }
+            }
+        }
+
+        /*
         float expansion = Mathf.Sin((m_timer / expansionPeriod) * Mathf.PI * 2.0f) * cubeSize * expansionRatio;
 
         // START FACE
@@ -231,7 +307,7 @@ public class GeneWorm : MonoBehaviour
                 m_vertices[4 * (i + 1) + 3] = new Vector3(i * cubeSize + cubeSize * 0.5f + actualExpansion, cubeSize * 0.5f + actualExpansion, -cubeSize * 0.5f - actualExpansion);
                 continue;
             }
-        }
+        }*/
 
         m_mesh.vertices = m_vertices;
         for (int i = 0; i < cubes.Length; ++i)
