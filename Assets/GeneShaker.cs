@@ -50,8 +50,8 @@ public class GeneShaker : MonoBehaviour
         period.SetValue((ulong)((0.5f / (maxPeriod - minPeriod) * int16Max)));
         m_baseGenome.chromosomes.Add("period", period);
 
-        Chromosome cubes = new Chromosome(30);
-        cubes.SetValue(1UL | (1UL << 3) | (1UL << 6));
+        Chromosome cubes = new Chromosome(40);
+        cubes.SetValue(1UL | (1UL << 4) | (1UL << 4));
         m_baseGenome.chromosomes.Add("cubes", cubes);
 
        /* GeneWorm worm = CreateWormFromGenome(m_baseGenome);
@@ -112,7 +112,7 @@ public class GeneShaker : MonoBehaviour
             {
                 GameObject.Destroy(m_currentGeneration[i].worm.gameObject);
                 m_currentGeneration[i].worm = CreateWormFromGenome(m_currentGeneration[i].genome);
-                m_currentGeneration[i].worm.transform.position = new Vector3(0.0f, 1.0f, maxCubeSize * 3 * i);
+                m_currentGeneration[i].worm.transform.position = new Vector3(0.0f, maxCubeSize, maxCubeSize * 3 * i);
             }
         }
 	}
@@ -130,8 +130,8 @@ public class GeneShaker : MonoBehaviour
         List<CubeType> cubes = new List<CubeType>();
         for (int i = 0; i < 10; ++i)
         {
-            ulong mask = (1 << 3) - 1;
-            ulong cubeValue = (cubesValue >> (i * 3)) & mask;
+            ulong mask = (1 << 4) - 1;
+            ulong cubeValue = (cubesValue >> (i * 4)) & mask;
             if (cubeValue > 0UL && cubeValue < (ulong)CubeType.COUNT)
             {
                 cubes.Add((CubeType)cubeValue);

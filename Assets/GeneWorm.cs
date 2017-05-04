@@ -7,6 +7,10 @@ public enum CubeType
     Soft,
     Pulse,
     AntiPulse,
+    BottomBend,
+    AntiBottomBend,
+    TopBend,
+    AntiTopBend,
     COUNT
 }
 
@@ -47,6 +51,20 @@ public class GeneWorm : MonoBehaviour
                 case CubeType.AntiPulse:
                     {
                         wormCubes[i] = new PulseWormCube();
+                        wormCubes[i].SetInvertedPhase(true);
+                    }
+                    break;
+                case CubeType.BottomBend: wormCubes[i] = new BottomBendWormCube(); break;
+                case CubeType.AntiBottomBend:
+                    {
+                        wormCubes[i] = new BottomBendWormCube();
+                        wormCubes[i].SetInvertedPhase(true);
+                    }
+                    break;
+                case CubeType.TopBend: wormCubes[i] = new TopBendWormCube(); break;
+                case CubeType.AntiTopBend:
+                    {
+                        wormCubes[i] = new TopBendWormCube();
                         wormCubes[i].SetInvertedPhase(true);
                     }
                     break;
@@ -157,13 +175,11 @@ public class GeneWorm : MonoBehaviour
             Vector3 origin = (m_vertices[(i * 4) + 0] + m_vertices[(i * 4) + 1] + m_vertices[(i * 4) + 2] + m_vertices[(i * 4) + 3]) / 4.0f;
             Quaternion rotation = Quaternion.FromToRotation(new Vector3(1.0f, 0.0f, 0.0f), basePlane.normal);
             Vector3[] outVertices;
-            wormCubes[i].CalculateVertices(cubeSize, expansionPeriod, cubeSize * expansionRatio, m_timer, out outVertices);
+            wormCubes[i].CalculateVertices(cubeSize, expansionPeriod, cubeSize * 0.5f * expansionRatio, m_timer, out outVertices);
             for (int j = 0; j < 8; ++j)
             {
                 outVertices[j] = (rotation * outVertices[j]) + origin;
             }
-
-            Debug.DrawLine(origin, origin + basePlane.normal, Color.blue);
 
             WormCube.DeformationType currentDeformation = wormCubes[i].GetDeformationType();
             WormCube.DeformationType previousDeformation = WormCube.DeformationType.Slave;
@@ -202,112 +218,6 @@ public class GeneWorm : MonoBehaviour
                 }
             }
         }
-
-        /*
-        float expansion = Mathf.Sin((m_timer / expansionPeriod) * Mathf.PI * 2.0f) * cubeSize * expansionRatio;
-
-        // START FACE
-        switch (cubes[0])
-        {
-            case CubeType.Hard:
-            case CubeType.Soft:
-                {
-                    m_vertices[0] = new Vector3(-cubeSize * 0.5f, cubeSize * 0.5f, cubeSize * 0.5f);
-                    m_vertices[1] = new Vector3(-cubeSize * 0.5f, -cubeSize * 0.5f, cubeSize * 0.5f);
-                    m_vertices[2] = new Vector3(-cubeSize * 0.5f, -cubeSize * 0.5f, -cubeSize * 0.5f);
-                    m_vertices[3] = new Vector3(-cubeSize * 0.5f, cubeSize * 0.5f, -cubeSize * 0.5f);
-                }
-                break;
-
-            case CubeType.Grow:
-                {
-                    m_vertices[0] = new Vector3(-cubeSize * 0.5f + expansion, cubeSize * 0.5f + expansion, cubeSize * 0.5f + expansion);
-                    m_vertices[1] = new Vector3(-cubeSize * 0.5f + expansion, -cubeSize * 0.5f - expansion, cubeSize * 0.5f + expansion);
-                    m_vertices[2] = new Vector3(-cubeSize * 0.5f + expansion, -cubeSize * 0.5f - expansion, -cubeSize * 0.5f - expansion);
-                    m_vertices[3] = new Vector3(-cubeSize * 0.5f + expansion, cubeSize * 0.5f + expansion, -cubeSize * 0.5f - expansion);
-                }
-                break;
-
-            case CubeType.Shrink:
-                {
-                    m_vertices[0] = new Vector3(-cubeSize * 0.5f - expansion, cubeSize * 0.5f - expansion, cubeSize * 0.5f - expansion);
-                    m_vertices[1] = new Vector3(-cubeSize * 0.5f - expansion, -cubeSize * 0.5f + expansion, cubeSize * 0.5f - expansion);
-                    m_vertices[2] = new Vector3(-cubeSize * 0.5f - expansion, -cubeSize * 0.5f + expansion, -cubeSize * 0.5f + expansion);
-                    m_vertices[3] = new Vector3(-cubeSize * 0.5f - expansion, cubeSize * 0.5f - expansion, -cubeSize * 0.5f + expansion);
-                }
-                break;
-        }
-
-        // END FACE
-        switch (cubes[cubes.Length - 1])
-        {
-            case CubeType.Hard:
-            case CubeType.Soft:
-                {
-                    m_vertices[4 * (cubes.Length) + 0] = new Vector3((cubes.Length - 1) * cubeSize + cubeSize * 0.5f, cubeSize * 0.5f, cubeSize * 0.5f);
-                    m_vertices[4 * (cubes.Length) + 1] = new Vector3((cubes.Length - 1) * cubeSize + cubeSize * 0.5f, -cubeSize * 0.5f, cubeSize * 0.5f);
-                    m_vertices[4 * (cubes.Length) + 2] = new Vector3((cubes.Length - 1) * cubeSize + cubeSize * 0.5f, -cubeSize * 0.5f, -cubeSize * 0.5f);
-                    m_vertices[4 * (cubes.Length) + 3] = new Vector3((cubes.Length - 1) * cubeSize + cubeSize * 0.5f, cubeSize * 0.5f, -cubeSize * 0.5f);
-                }
-                break;
-
-            case CubeType.Grow:
-                {
-                    m_vertices[4 * (cubes.Length) + 0] = new Vector3((cubes.Length - 1) * cubeSize + cubeSize * 0.5f + expansion, cubeSize * 0.5f + expansion, cubeSize * 0.5f + expansion);
-                    m_vertices[4 * (cubes.Length) + 1] = new Vector3((cubes.Length - 1) * cubeSize + cubeSize * 0.5f + expansion, -cubeSize * 0.5f - expansion, cubeSize * 0.5f + expansion);
-                    m_vertices[4 * (cubes.Length) + 2] = new Vector3((cubes.Length - 1) * cubeSize + cubeSize * 0.5f + expansion, -cubeSize * 0.5f - expansion, -cubeSize * 0.5f - expansion);
-                    m_vertices[4 * (cubes.Length) + 3] = new Vector3((cubes.Length - 1) * cubeSize + cubeSize * 0.5f + expansion, cubeSize * 0.5f + expansion, -cubeSize * 0.5f - expansion);
-                }
-                break;
-
-            case CubeType.Shrink:
-                {
-                    m_vertices[4 * (cubes.Length) + 0] = new Vector3((cubes.Length - 1) * cubeSize + cubeSize * 0.5f - expansion, cubeSize * 0.5f - expansion, cubeSize * 0.5f - expansion);
-                    m_vertices[4 * (cubes.Length) + 1] = new Vector3((cubes.Length - 1) * cubeSize + cubeSize * 0.5f - expansion, -cubeSize * 0.5f + expansion, cubeSize * 0.5f - expansion);
-                    m_vertices[4 * (cubes.Length) + 2] = new Vector3((cubes.Length - 1) * cubeSize + cubeSize * 0.5f - expansion, -cubeSize * 0.5f + expansion, -cubeSize * 0.5f + expansion);
-                    m_vertices[4 * (cubes.Length) + 3] = new Vector3((cubes.Length - 1) * cubeSize + cubeSize * 0.5f - expansion, cubeSize * 0.5f - expansion, -cubeSize * 0.5f + expansion);
-                }
-                break;
-        }
-
-        for (int i = 0; i < cubes.Length - 1; ++i)
-        {
-            CubeType type1 = cubes[i];
-            CubeType type2 = cubes[i + 1];
-            if ((type1 == CubeType.Hard || type2 == CubeType.Hard) ||
-                (type1 == CubeType.Soft && type2 == CubeType.Soft) ||
-                (type1 == CubeType.Grow && type2 == CubeType.Shrink) ||
-                (type1 == CubeType.Shrink && type2 == CubeType.Grow))
-            {
-                m_vertices[4 * (i + 1) + 0] = new Vector3(i * cubeSize + cubeSize * 0.5f, cubeSize * 0.5f, cubeSize * 0.5f);
-                m_vertices[4 * (i + 1) + 1] = new Vector3(i * cubeSize + cubeSize * 0.5f, -cubeSize * 0.5f, cubeSize * 0.5f);
-                m_vertices[4 * (i + 1) + 2] = new Vector3(i * cubeSize + cubeSize * 0.5f, -cubeSize * 0.5f, -cubeSize * 0.5f);
-                m_vertices[4 * (i + 1) + 3] = new Vector3(i * cubeSize + cubeSize * 0.5f, cubeSize * 0.5f, -cubeSize * 0.5f);
-                continue;
-            }
-            // FROM HERE, WE WON'T HAVE ANY HARD CUBE, AND WILL ALWAYS HAVE AT ONLY ONE GROW OR SHRINK
-
-            // GROW OR SHRINK VS NOTHING
-            if (type1 == type2 || type1 == CubeType.Soft || type2 == CubeType.Soft)
-            {
-                CubeType actualType = CubeType.Hard;
-                if (type1 != CubeType.Soft)
-                {
-                    actualType = type1;
-                }
-                else if (type2 != CubeType.Soft)
-                {
-                    actualType = type2;
-                }
-
-                float actualExpansion = actualType == CubeType.Grow ? expansion : -expansion;
-                m_vertices[4 * (i + 1) + 0] = new Vector3(i * cubeSize + cubeSize * 0.5f + actualExpansion, cubeSize * 0.5f + actualExpansion, cubeSize * 0.5f + actualExpansion);
-                m_vertices[4 * (i + 1) + 1] = new Vector3(i * cubeSize + cubeSize * 0.5f + actualExpansion, -cubeSize * 0.5f - actualExpansion, cubeSize * 0.5f + actualExpansion);
-                m_vertices[4 * (i + 1) + 2] = new Vector3(i * cubeSize + cubeSize * 0.5f + actualExpansion, -cubeSize * 0.5f - actualExpansion, -cubeSize * 0.5f - actualExpansion);
-                m_vertices[4 * (i + 1) + 3] = new Vector3(i * cubeSize + cubeSize * 0.5f + actualExpansion, cubeSize * 0.5f + actualExpansion, -cubeSize * 0.5f - actualExpansion);
-                continue;
-            }
-        }*/
 
         m_mesh.vertices = m_vertices;
         for (int i = 0; i < cubes.Length; ++i)
